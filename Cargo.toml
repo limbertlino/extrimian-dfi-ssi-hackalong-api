@@ -1,0 +1,6 @@
+[package]
+name = "extrimian-dfi-ssi-hackalong-api"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
