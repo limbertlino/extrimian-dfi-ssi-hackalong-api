@@ -1,0 +1,42 @@
+name: main
+
+env:
+  COMMIT_MESSAGES_STRING: ${{ join(github.event.commits.*.message, ', ') }}
+  CARGO_TERM_COLOR: always
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches: ["main"]
+    types: [opened, synchronize]
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Caching dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Build
+        run: cargo build --release
+      - name: Run tests
+        run: cargo test --verbose
+
+  tag_release:
+    needs: [build]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Bump version and push tag
+        if: ${{ github.event_name == 'push'  && !contains(env.COMMIT_MESSAGES_STRING, '#skip')}}
+        uses: anothrNick/github-tag-action@777684df761b882a3f4f70db16ac70d8cc78d0ea
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          DEFAULT_BUMP: patch
