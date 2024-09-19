@@ -3,6 +3,7 @@ name: main
 env:
   COMMIT_MESSAGES_STRING: ${{ join(github.event.commits.*.message, ', ') }}
   CARGO_TERM_COLOR: always
+  deploy_url: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
 
 on:
   push:
@@ -26,6 +27,34 @@ jobs:
         run: cargo build --release
       - name: Run tests
         run: cargo test --verbose
+
+      - name: Trigger deployment on render
+        if: ${{ github.event_name == 'push'  && !contains(env.COMMIT_MESSAGES_STRING, '#skip')}}
+        run: curl "$deploy_url"
+
+      - name: Pull Request Merged to Main Notification
+        uses: stegzilla/discord-notify@v2
+        if: ${{ success() &&  github.event_name == 'push'  && !contains(env.COMMIT_MESSAGES_STRING, '#skip' ) }}
+        with:
+          webhook_url: ${{secrets.DISCORD_WEBHOOK}}
+          title: Succeeded!
+          message: |
+            **Event Type**: ${{ github.event_name }}
+            **Commit Message**: ${{ github.event.head_commit.message }}
+            **Commit URL**: ${{ github.event.head_commit.url }}
+          include_image: true
+
+      - name: Build Failed Notification
+        uses: stegzilla/discord-notify@v2
+        if: failure()
+        with:
+          webhook_url: ${{secrets.DISCORD_WEBHOOK}}
+          title: Failed!
+          message: |
+            **Event Type**: ${{ github.event_name }}
+            **Commit Message**: ${{ github.event.head_commit.message }}
+            **Commit URL**: ${{ github.event.head_commit.url }}
+          include_image: true
 
   tag_release:
     needs: [build]

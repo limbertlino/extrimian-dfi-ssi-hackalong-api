@@ -1,0 +1,16 @@
+name: Check Health
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+
+jobs:
+  check_health:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check the deployed service URL
+        uses: jtalk/url-health-check-action@v4
+        with:
+          url: https://extrimian-dfi-ssi-hackalong-api.onrender.com/health
+          max-attempts: 3
+          retry-delay: 120s
